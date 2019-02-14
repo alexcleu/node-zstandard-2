@@ -1,3 +1,5 @@
+EDIT: Same as albertdb except I added decompressStreamFromStream and fixed decompress(ion)StreamFromFile so it's consistent with the rest
+
 # node-zstandard
 Node.js interface to Zstandard (zstd)
 
