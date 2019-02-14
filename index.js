@@ -174,7 +174,7 @@ function decompressStreamFromStream(stream, callback){
       return;
     } 
     var proc=cp.spawn(zstdBinPath, ['-d', '-c']);
-    stream.pipe(proc.stdin));
+    stream.pipe(proc.stdin);
     proc.stdout.on('data', (data) => {
       eventEmitter.emit('data', data);
     });
