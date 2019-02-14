@@ -132,7 +132,7 @@ function decompress(inputFile, outputFile, callback){
   });
 }
 
-function decompressionStreamFromFile(inputFile, callback){
+function decompressStreamFromFile(inputFile, callback){
   inputFile=path.resolve(inputFile);
   var eventEmitter = new events.EventEmitter();
   fs.access(inputFile, fs.R_OK, (err) => {
@@ -163,6 +163,34 @@ function decompressionStreamFromFile(inputFile, callback){
       });
       if(callback) callback(null, eventEmitter);
     });
+  });
+}
+
+function decompressStreamFromStream(stream, callback){
+  var eventEmitter = new events.EventEmitter();
+  fs.access(zstdBinPath, fs.R_OK | fs.X_OK, (err) => {
+    if(err){
+      if(callback) callback(new Error('Zstd binary is not executable.'));
+      return;
+    } 
+    var proc=cp.spawn(zstdBinPath, ['-d', '-c']);
+    stream.pipe(proc.stdin));
+    proc.stdout.on('data', (data) => {
+      eventEmitter.emit('data', data);
+    });
+    proc.once('exit', (code, signal) => {
+      if(code==0) eventEmitter.emit('end');
+      else if(code==39) eventEmitter.emit('error', new Error('Not in zstd format'));
+      else eventEmitter.emit('error', new Error('Unexpected stream close. Code '+code+'. Signal'+signal));
+      proc.stdout.removeAllListeners('data');
+      proc.removeAllListeners('error');
+    });
+    proc.once('error', (err) => {
+      eventEmitter.emit('error', err);
+      proc.stdout.removeAllListeners('data');
+      proc.removeAllListeners('exit');
+    });
+    if(callback) callback(null, eventEmitter);
   });
 }
 
@@ -216,5 +244,6 @@ module.exports.compressStreamToFile=compressStreamToFile;
 
 module.exports.decompress=decompress;
 module.exports.decompressFileToFile=decompress;
-module.exports.decompressionStreamFromFile=decompressionStreamFromFile;
+module.exports.decompressStreamFromFile=decompressStreamFromFile;
+module.exports.decompressStreamFromStream=decompressStreamFromStream;
 module.exports.decompressFileToStream=decompressFileToStream;
